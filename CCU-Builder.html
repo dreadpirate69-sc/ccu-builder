@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<!-- CCU-Builder.html: the STRUCTURE of the page. The browser reads this first.
+     CCU Builder 1.0 (first public release). index.html is an identical copy, so the page
+     opens the same from a GitHub Pages address and from an unzipped folder. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CCU Builder 1.0</title>
+  <link rel="icon" type="image/png" href="logo.png">  <!-- the logo on the browser tab and bookmarks -->
+  <!-- Link the stylesheet (how things LOOK) -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <!-- Row 1: the round logo, the title and a small credit. -->
+      <div class="header-title-row">
+        <!-- NEW: logo.png sits in the same folder. style.css makes it small and round. -->
+        <img src="logo.png" class="avatar" alt="CCU Builder logo: a ship upgrading from blue to gold" width="44" height="44">
+        <h1>CCU Builder 1.0</h1>
+        <span class="credit">by Dreadpirate69</span>
+        <!-- NEW: shown only while the made-up example data is loaded (app.js removes "hidden") -->
+        <span id="exampleBadge" class="example-badge" hidden>Example data: made up, not a real hangar</span>
+      </div>
+
+      <!-- Row 2: CSV loading and the display controls share one left-aligned flex row. -->
+      <div class="header-actions-row">
+        <div class="header-csv">
+          <!-- A file picker. accept=".csv" hides non-CSV files in the dialog. -->
+          <label class="upload">
+            Load CCU Game CSV
+            <input type="file" id="csvInput" accept=".csv">
+          </label>
+
+          <!-- NEW in Stage 4: the CCU Game SHIPS export (your ships, for the chain form) -->
+          <label class="upload">
+            Load ships CSV
+            <input type="file" id="shipsInput" accept=".csv">
+          </label>
+
+          <!-- NEW: no CSV? Load a made-up hangar from example.js to play with -->
+          <button id="exampleDataButton" title="Load a made-up hangar (starter ships + CCUs) to try the page">Try example data</button>
+        </div>
+
+        <div class="header-controls">
+          <!-- Stage 2: zoom slider. type="range" draws a slider from min to max. -->
+          <label class="zoom">
+            Zoom
+            <input type="range" id="zoomSlider" min="8" max="30" value="16">
+            <span id="zoomValue">16 px per $5</span>
+          </label>
+
+          <!-- Stage 3.1: switch concept ships to community-guessed prices (from prices.js) -->
+          <label class="spec-toggle">
+            <input type="checkbox" id="specToggle">
+            Speculative prices*
+          </label>
+
+          <!-- Stage 2: sends every piece back to the stack -->
+          <button id="resetButton">Reset layout</button>
+        </div>
+      </div>
+
+      <!-- Row 3: backup and help buttons. The file picker is hidden; its button opens it. -->
+      <div class="header-tools">
+        <button id="saveFileButton" title="Download everything as a .json file (a backup you can load again)">Save to file</button>
+        <button id="loadFileButton" title="Load a .json file made with 'Save to file'">Load from file</button>
+        <input type="file" id="jsonInput" accept=".json" hidden>
+        <button id="helpButton" title="Show the welcome steps again">? Help</button>
+        <!-- NEW in 4.4: every teal ★ likely warbond on your chains, with the cash needed.
+             app.js keeps the count and total in the text up to date. -->
+        <button id="shopButton" title="The planned teal ★ CCUs on your chains (warbonds and standard): copy, download or email the list">🛒 Shopping list (0, $0)</button>
+        <!-- NEW in 4.7: when the page last saved ("Autosaved 4:52 PM · Saved to file ..."), and an
+             orange warning that only shows when the browser refuses to save (app.js part 5b) -->
+        <span class="save-status" id="saveStatus"></span>
+        <span class="save-warning" id="saveWarning" hidden title="Your browser blocked saving (or its storage is full). The page still works, but a refresh or restart could lose your changes.">⚠ Not saving in this browser: use Save to file</span>
+      </div>
+      <!-- NEW in 4.7: a one-time tip after your first real CSV load. "Not now" hides it for good. -->
+      <div class="backup-tip" id="backupTip" hidden>
+        <span>Tip: your hangar is only kept in this browser. Click <b>Save to file</b> now and then for a backup copy you can load again.</span>
+        <button type="button" class="small-button" id="backupTipSave">Save to file now</button>
+        <button type="button" class="small-button" id="backupTipClose">Not now</button>
+      </div>
+    </div>
+
+    <!-- NEW in Stage 4.6: CIG's official "Made by the Community" logo (white version, from the
+         Star Citizen Fankit) in the top-right corner of the header. It is used exactly as CIG
+         made it: no recolor, filter or flip. style.css only sets its height (the width follows). -->
+    <img src="community.png" class="community-badge" id="communityBadge" alt="Made by the Community (Star Citizen fan kit logo)" height="48">
+  </header>
+
+  <!-- NEW in Stage 4.6: the notices CIG's Fankit rules ask fan sites to show, in readable text
+       (at least 10pt) just under the header. The texts must stay word for word. -->
+  <section class="notice-bar" id="noticeBar" aria-label="Notices">
+    <p class="notice-text">
+      <span class="notice" id="fanNotice">This is an unofficial Star Citizen fan site, not affiliated with the Cloud Imperium group of companies. All content on this site not authored by its host or users are property of their respective owners.</span>
+      <span class="notice" id="trademarkNotice">This site is not endorsed by or affiliated with the Cloud Imperium or Roberts Space Industries group of companies. All game content and materials are copyright Cloud Imperium Rights LLC and Cloud Imperium Rights Ltd. Star Citizen®, Squadron 42®, Roberts Space Industries®, and Cloud Imperium® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.</span>
+      <span class="notice notice-links"><a href="https://robertsspaceindustries.com/" id="rsiLink" target="_blank" rel="noopener">Official Star Citizen site: robertsspaceindustries.com</a>
+        · <span id="ccuGameNotice">Not affiliated with <a href="https://ccugame.app/" target="_blank" rel="noopener noreferrer">CCU Game</a>.</span></span>
+    </p>
+  </section>
+
+
+  <!-- Stage 3: totals across all chains. JavaScript fills it in. -->
+  <div id="totals" class="totals"></div>
+
+  <!-- Color key. The words matter: never color alone. -->
+  <div class="key">
+    <span class="swatch owned"></span> In hangar
+    <span class="swatch buyback"></span> In buyback (striped, "BB")
+    <span class="swatch flagged"></span> ✗ Flagged
+    <span class="swatch missing-key"></span> Missing (dashed)
+    <span class="swatch ship-key"></span> Starter ship
+    <span class="swatch planned-key"></span> Planned ship (dashed)
+    <!-- NEW in Stage 4.3: can only happen with "Speculative prices*" ticked -->
+    <span class="swatch collision"></span> ⚠ Spec collision
+    <!-- NEW in Stage 4.4: a guess from past warbond sales, never owned -->
+    <span class="swatch wb-key"></span> ★ Suggested warbond (dashed, not owned)
+    <!-- NEW in Stage 4.5: the same teal piece WITHOUT the WB badge is a planned standard CCU -->
+    <span class="key-wb-badge">WB</span> badge = warbond (cash); no badge = standard (store credit, est.)
+    <span class="spec-note">* community consensus (median), not official</span>
+  </div>
+
+  <!-- Two side-by-side areas. Left (4.7), top to bottom: your ships, your CCUs (owned), then
+       the suggested warbonds. Right = your chains. -->
+  <div class="layout">
+    <section class="panel">
+      <!-- NEW in Stage 4: your ships. <details> is a box you can open and close.
+           4.7: stays at the TOP of the left column and starts OPEN, like before. It has a
+           height limit and scrolls on its own, so your CCUs and the suggestions below keep room. -->
+      <details id="shipsBox" open>
+        <summary>Your ships (<span id="shipsCount">0</span>)</summary>
+        <div id="shipsList"></div>
+      </details>
+      <!-- NEW in Stage 4.2: the stack holds two groups, "Starter ships" and "CCUs".
+           The button opens the "Add starter ship" form further down.
+           4.7: renamed "Your CCUs (owned)" (was "Your pieces"); it sits under "Your ships". -->
+      <div class="panel-head">
+        <h2 id="stackTitle">Your CCUs (owned)</h2>
+        <button id="addShipButton">+ Add starter ship</button>
+      </div>
+      <!-- Empty box. JavaScript fills it with puzzle pieces. -->
+      <main id="stack"></main>
+      <!-- NEW in Stage 4.4: suggested warbonds for the selected chain (click a chain's name),
+           or for one yellow gap (click the gap). app.js (part 11) fills it from warbonds.js.
+           Stage 4.5: for a gap it lists warbond AND standard CCUs that fit inside it (part 12).
+           4.7: now BELOW your own CCUs, renamed "Suggested warbonds" (was "Likely warbonds"). -->
+      <details id="warbondBox" open>
+        <summary>Suggested warbonds ★ <span class="summary-note">(not owned, past prices)</span> · <span id="warbondCount">0</span></summary>
+        <!-- NEW in 4.7: a soft note. It's an opinion, so it's worded gently. -->
+        <p class="wb-rare-note" id="warbondRareNote">Warbonds under $100 have become rare. Past sales below that may not come back.</p>
+        <p class="wb-updated" id="warbondUpdated">Prices last updated ?, always double-check on RSI</p>
+        <p class="wb-for" id="warbondFor"></p>
+        <!-- "Filtered to gap $X–$Y (clear)": shown only after you click a yellow gap -->
+        <div class="wb-filter-bar" id="warbondFilterBar" hidden></div>
+        <!-- A manual search by warbond price, e.g. $45 to $60. An empty box = no limit. -->
+        <div class="wb-range">
+          <label>WB price $ <input type="number" id="wbMin" min="0" step="5" placeholder="45"></label>
+          <label>to $ <input type="number" id="wbMax" min="0" step="5" placeholder="60"></label>
+          <button type="button" class="small-button" id="wbRangeClear">clear</button>
+        </div>
+        <div id="warbondList"></div>
+      </details>
+    </section>
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Your chains</h2>
+        <!-- NEW in Stage 4: manage chains on the page -->
+        <button id="addChainButton">+ Add chain</button>
+        <button id="exampleChainsButton">Load example chains</button>
+        <button id="clearChainsButton">Clear all chains</button>
+      </div>
+      <!-- Empty box. JavaScript fills it with the price header and one row per chain. -->
+      <div id="chains"></div>
+    </section>
+  </div>
+
+  <!-- NEW in Stage 4: the Add / Edit chain form. A <dialog> is a pop-up box that
+       stays hidden until JavaScript opens it with showModal(). -->
+  <dialog id="chainDialog">
+    <!-- novalidate = let app.js check the boxes and show its own ✗ messages
+         (instead of the browser's pop-up, which also rejects prices like $47.50) -->
+    <form id="chainForm" novalidate>
+      <h3 id="formTitle">Add chain</h3>
+
+      <label>Name
+        <input type="text" id="fName" placeholder="e.g. Perseus (leave empty = end ship)">
+      </label>
+
+      <!-- Stage 4.2: no "starting ship" here any more. Every chain starts empty at $0;
+           you drag a starter ship onto the row's $0 slot yourself. -->
+      <fieldset>
+        <legend>End ship (the goal)</legend>
+        <label>Ship
+          <!-- list="shipNames" = show suggestions from the <datalist> below while typing -->
+          <input type="text" id="fEndShip" list="shipNames">
+        </label>
+        <label class="price-label">Price $
+          <input type="number" id="fEndPrice" min="0" step="5">
+        </label>
+      </fieldset>
+      <!-- Filled in by JavaScript when the end ship is in prices.js (a concept ship) -->
+      <p id="fSpecHint" class="form-hint"></p>
+
+      <p class="form-hint">The price fills in by itself when your CSVs or prices.js know the ship.
+        You can always change it. Use today's store price: the "Speculative prices*" box
+        swaps in the community guess for concept ships.</p>
+      <div id="formErrors"></div>
+
+      <div class="form-buttons">
+        <button type="submit" class="primary">Save chain</button>
+        <button type="button" id="formCancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+  <!-- NEW in Stage 4.2: the "Add starter ship" form, for a ship you don't own or that
+       isn't for sale (like an Aurora ES used as a placeholder in CCU Game). -->
+  <dialog id="shipDialog">
+    <form id="shipForm" novalidate>
+      <h3>Add starter ship</h3>
+      <p class="form-hint">A <b>planned</b> ship: one you don't own yet, or can't buy. It is drawn
+        dashed with the word "planned", and its price counts as <b>missing</b> money (not paid).</p>
+      <fieldset>
+        <legend>Planned ship</legend>
+        <label>Ship
+          <input type="text" id="sName" list="shipNames" placeholder="e.g. Aurora ES">
+        </label>
+        <label class="price-label">Price $
+          <input type="number" id="sPrice" min="0" step="5">
+        </label>
+      </fieldset>
+      <div id="shipErrors"></div>
+      <div class="form-buttons">
+        <button type="submit" class="primary">Add ship</button>
+        <button type="button" id="shipCancel">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- NEW in Stage 4.3: the welcome pop-up. app.js opens it the first time you visit
+       (unless you ticked "Don't show this again"), and "? Help" always opens it. -->
+  <dialog id="welcomeDialog">
+    <div id="welcomeBox">
+      <h3>Welcome to CCU Builder</h3>
+      <p class="form-hint">Plan your CCU chains on a price ruler. Everything stays on your computer.</p>
+      <ol>
+        <li><b>Load CCU Game CSV</b>: your CCUs export from <a href="https://ccugame.app/" id="ccuGameLink" target="_blank" rel="noopener noreferrer">CCU Game</a> (the CCUs one).
+          <!-- A way in for people without a CSV. Stage 4.4: moved here, between step 1 and step 2. -->
+          <p class="example-hint" id="exampleHint">No CSV yet? Click <b>Try example data</b> to play with a made-up hangar.</p>
+          <!-- NEW in 4.7: where the prices come from -->
+          <p class="price-source-hint" id="priceSourceHint">Prices come from your CCU Game export. If you set speculative prices in CCU Game, those are what the app uses.</p></li>
+        <li><b>Load ships CSV</b>: your ships export. Each ship becomes a gray starter ship piece.</li>
+        <li>Click <b>Clear all chains</b> to remove the example chains, then <b>+ Add chain</b>
+          for each ship you're aiming for (the end ship).</li>
+        <li>Drag a <b>starter ship</b> onto a row's <b>$0</b> slot, then drag <b>CCUs</b> from
+          <b>Your CCUs (owned)</b> (left, under Your ships) after it.
+          The white box shows where a piece fits.</li>
+        <li>Don't own the ship you want to start from? <b>+ Add starter ship</b> adds a
+          <b>planned</b> ship (its price counts as missing).</li>
+        <li><b>Save to file</b> now and then as a backup. The page saves in your browser too,
+          but browser data can be cleared. <b>Load from file</b> brings it back.</li>
+      </ol>
+      <!-- NEW in Stage 4.4: one sentence about the suggested warbonds and the shopping list -->
+      <p class="form-hint wb-welcome" id="warbondHint">New: <b>Suggested warbonds ★</b> (left, below your CCUs) suggests teal warbond
+        pieces for the chain you click, or warbond and standard CCUs for a yellow gap, and each one you place goes on the <b>🛒 Shopping list</b>.</p>
+      <p class="form-hint">This pop-up comes back if your browser data is cleared or you use a
+        different browser. Click <b>? Help</b> in the header to see it any time.</p>
+      <!-- Credits for the data this app is built on -->
+      <p class="form-hint credits-note" id="creditsNote">CCU and ship data come from your exports from
+        <a href="https://ccugame.app/" target="_blank" rel="noopener noreferrer">CCU Game (ccugame.app)</a>. Community price estimates come from the
+        Release Price Speculation tab of the community's
+        <a href="https://docs.google.com/spreadsheets/d/1TqVcGcfSZBX4CZaqt4JxyUGZcByutNwo1pRBW29zzpE/edit?gid=2139030025#gid=2139030025" id="sheetLink" target="_blank" rel="noopener noreferrer">Star Citizen Stuff sheet</a>. Thanks to both.</p>
+      <!-- NEW in Stage 4.6: the same notices as under the header, next to the official
+           "Made by the Community" logo (unaltered, only sized by style.css) -->
+      <div class="welcome-notices" id="welcomeNotices">
+        <img src="community.png" class="community-badge" id="welcomeBadge" alt="Made by the Community (Star Citizen fan kit logo)" height="40">
+        <div class="welcome-notice-text">
+          <p class="notice" id="welcomeFanNotice">This is an unofficial Star Citizen fan site, not affiliated with the Cloud Imperium group of companies. All content on this site not authored by its host or users are property of their respective owners.</p>
+          <p class="notice" id="welcomeTrademarkNotice">This site is not endorsed by or affiliated with the Cloud Imperium or Roberts Space Industries group of companies. All game content and materials are copyright Cloud Imperium Rights LLC and Cloud Imperium Rights Ltd. Star Citizen®, Squadron 42®, Roberts Space Industries®, and Cloud Imperium® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.</p>
+          <p class="notice"><a href="https://robertsspaceindustries.com/" id="welcomeRsiLink" target="_blank" rel="noopener">Official Star Citizen site: robertsspaceindustries.com</a>
+            · Not affiliated with CCU Game.</p>
+        </div>
+      </div>
+      <p class="form-hint built-by" id="builtBy">Built by Dreadpirate69. Free, non-commercial fan tool.</p>
+      <label class="inline-check">
+        <!-- autofocus: the pop-up starts on this checkbox (not on the links above) -->
+        <input type="checkbox" id="welcomeHide" autofocus> Don't show this again
+      </label>
+      <div class="form-buttons">
+        <!-- app.js: "Got it" saves the checkbox and closes the pop-up -->
+        <button type="button" class="primary" id="welcomeOk">Got it</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- NEW in Stage 4.4: the shopping list pop-up. app.js fills in the lines and the total
+       every time the page redraws. -->
+  <dialog id="shopDialog">
+    <h3>🛒 Shopping list</h3>
+    <!-- 4.7: app.js draws two sections: "Warbond CCUs (cash)" and "Standard CCUs (store credit, estimated)" -->
+    <p class="form-hint">Every teal ★ planned CCU on your chains, in two sections. <b>Warbonds</b> are paid in cash: the
+      last-seen warbond sale price minus the ship it follows (past sales, not a promise they come back). <b>Standard CCUs</b>
+      are paid with store credit: today's store price difference (estimated, CIG doesn't sell every pair).</p>
+    <p class="wb-updated" id="shopUpdated"></p>
+    <div id="shopLines"></div>
+    <p class="shop-total" id="shopTotal"></p>
+    <!-- NEW in 4.5: the store credit subtotal (only shown when there are planned standard CCUs) -->
+    <p class="shop-total shop-credit-total" id="shopCredit" hidden></p>
+    <!-- 4.7: mail apps cut off very long links, so Email is only for short lists -->
+    <p class="form-hint" id="shopEmailNote">Email is best for short lists: long ones can get cut off. Use Copy or Download .txt for those.</p>
+    <div class="form-buttons">
+      <button type="button" class="primary" id="shopCopy">Copy</button>
+      <button type="button" id="shopDownload">Download .txt</button>
+      <!-- A mailto: link opens YOUR mail app with the list filled in. You type your address and press send. -->
+      <a class="button-link" id="shopEmail" href="mailto:" title="Opens your own mail app with the list filled in. Best for short lists.">Email to myself</a>
+      <button type="button" id="shopClose">Close</button>
+    </div>
+    <p class="form-hint" id="shopStatus"></p>
+  </dialog>
+
+  <!-- Suggestions for the ship name boxes. JavaScript fills it. -->
+  <datalist id="shipNames"></datalist>
+
+  <!-- Load the JavaScript last, so the HTML above exists when it runs.
+       chains.js, warbonds.js, prices.js and example.js must come BEFORE app.js, because app.js
+       uses the CHAINS list, the WARBONDS list, the SPEC_PRICES list and the example data. -->
+  <script src="chains.js"></script>
+  <script src="warbonds.js"></script>
+  <script src="prices.js"></script>
+  <script src="example.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

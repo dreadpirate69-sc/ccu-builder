@@ -1,0 +1,874 @@
+/* style.css: how the page LOOKS. Each block targets elements and sets their appearance. */
+
+/* The whole page */
+body {
+  font-family: Arial, sans-serif;
+  background: #1b1f27;   /* dark gray-blue background */
+  color: #e8e8e8;        /* light text */
+  margin: 0;
+  padding: 20px;
+  /* Stage 4.3: the page is a column exactly as tall as the window. The two panels
+     (.layout) take whatever height is left, so a header that wraps onto an extra
+     line (small window, more buttons) never pushes the panels off the bottom. */
+  height: 100vh;
+  box-sizing: border-box;  /* the 20px padding counts inside the 100vh */
+  display: flex;
+  flex-direction: column;
+}
+
+/* The header: on the left a column of three rows (.header-left). Row 2 uses a row flex
+   layout so the CSV buttons and display controls stay side by side; it can wrap on narrow
+   windows. Row 1 and row 3 stay simple, left-aligned rows.
+   Stage 4.6: the header itself is a row, so the "Made by the Community" logo can sit in
+   the top-right corner (justify-content: space-between pushes it to the far right). */
+header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.header-title-row, .header-actions-row, .header-csv, .header-tools, .header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.header-actions-row { gap: 16px; }
+.header-controls { gap: 16px; }
+h1 { margin: 0; font-size: 26px; }
+h2 { margin: 0 0 10px; font-size: 16px; color: #aab; font-weight: normal; }
+
+/* Style the label like a button, and hide the ugly default file input inside it */
+.upload {
+  background: #3a7bd5;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.upload input { display: none; }
+
+/* NEW: zoom slider and reset button */
+.zoom { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+#zoomValue { color: #aab; min-width: 90px; }
+button {
+  background: #3b4250;
+  color: #e8e8e8;
+  border: 1px solid #5a6272;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+button:hover { background: #4a5263; }
+
+.key { margin: 10px 0; font-size: 14px; }   /* (Stage 4.6: 10px, was 14px, to make room for the notices) */
+.key .hint { color: #aab; margin-left: 12px; line-height: 26px; }
+.swatch {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin: 0 4px 0 12px;
+}
+
+/* NEW: two areas side by side. Left column 330px wide, right column takes the rest.
+   Both are as tall as the window (minus the header), and scroll on their own. */
+.layout {
+  display: grid;
+  grid-template-columns: 330px 1fr;
+  gap: 16px;
+  flex: 1;                /* Stage 4.3: fill the rest of the window (was calc(100vh - 215px)) */
+  min-height: 0;          /* allowed to be smaller than its contents, so the panels scroll */
+}
+.panel {
+  background: #222733;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;          /* lets the inner box scroll instead of growing */
+  min-width: 0;
+}
+
+/* The stack: pieces laid out one per line */
+#stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;              /* space BETWEEN pieces (bigger than the label gap, so each label clearly belongs to its piece) */
+  overflow: auto;         /* scroll if the list is long or a piece is very long */
+  color: #aab;
+  font-size: 14px;
+}
+
+/* One puzzle piece. Its WIDTH is set by JavaScript from the price. */
+.piece {
+  height: 26px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;   /* text starts at the left, so short pieces still show "$5" */
+  padding-left: 2px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #111;
+  white-space: nowrap;    /* keep text on one line */
+  overflow: hidden;       /* text longer than a short piece is cut off (hover to read it all) */
+  box-sizing: border-box;
+  position: relative;
+  flex-shrink: 0;         /* never squash a piece: its length is its price */
+  cursor: grab;
+  touch-action: none;     /* on touch screens, dragging moves the piece instead of scrolling */
+  user-select: none;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}
+
+/* Colors match the map key. Used on both pieces and swatches. */
+.owned   { background: #4caf50; }  /* green = owned, in hangar */
+.buyback { background: #4a90e2; }  /* blue  = in buyback */
+/* Buyback pieces also get diagonal stripes, so they differ by pattern too, not only color */
+.piece.buyback, .swatch.buyback {
+  background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.28) 0 4px, transparent 4px 9px);
+}
+
+/* A row = piece + its text label. column-reverse puts the label ABOVE the piece. */
+.row { display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 3px; }
+.label { font-size: 13px; color: #e8e8e8; }   /* long labels wrap onto 2 lines */
+
+/* ---------- The chain rows (Stage 2, rebuilt in Stage 4 for the shared ruler) ---------- */
+
+/* The box holding the price header and all chain rows. It scrolls both ways,
+   so ALL rulers scroll sideways together. */
+#chains { overflow: auto; flex: 1; position: relative; }
+
+/* Stage 4: price header ("$0 $50 $100 ...") that stays at the top while scrolling down */
+.axis-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;              /* above the rows */
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  background: #222733;
+  border-bottom: 1px solid #4a5263;
+}
+/* Top-left corner cell: pinned both up and left */
+.axis-corner {
+  position: sticky;
+  left: 0;
+  z-index: 21;
+  width: 270px;             /* same as LABEL_WIDTH in app.js */
+  flex-shrink: 0;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #8a93a3;
+  background: #222733;
+}
+.axis-labels { position: relative; height: 22px; margin: 0 20px; flex-shrink: 0; }
+.axis-label {
+  position: absolute;
+  top: 4px;
+  font-size: 11px;
+  color: #aab;
+  transform: translateX(-50%);   /* center the text on its price */
+}
+
+/* One chain row = pinned label (left) + ruler area (right), side by side */
+.chain-row {
+  display: flex;
+  align-items: flex-start;
+  width: max-content;       /* as wide as the ruler, so it sticks out and scrolls */
+  min-width: 100%;
+  border-bottom: 1px solid #333a48;
+}
+.chain-row.hover, .chain-row.hover .chain-label { background: #283042; }   /* row under the mouse while dragging */
+
+/* Row label. "sticky" + left: 0 pins it on the left while the rulers scroll sideways.
+   It needs a solid background so pieces slide UNDER it, not through it. */
+.chain-label {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  width: 270px;             /* same as LABEL_WIDTH in app.js */
+  flex-shrink: 0;
+  align-self: stretch;      /* as tall as the row */
+  box-sizing: border-box;
+  padding: 6px 10px 8px 0;
+  display: flex;
+  flex-direction: column;   /* one thing per line */
+  gap: 3px;
+  font-size: 12px;
+  color: #aab;
+  background: #222733;
+  border-right: 1px solid #4a5263;
+}
+.chain-label strong { color: #e8e8e8; font-size: 15px; }
+.status-line { display: flex; gap: 4px 8px; flex-wrap: wrap; align-items: center; }
+.chain-details { font-size: 11px; }
+.badge {
+  padding: 1px 8px;
+  border: 1px solid #4caf50;
+  border-radius: 10px;
+  color: #8fd694;
+  font-weight: bold;
+  font-size: 12px;
+}
+.row-buttons { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+.small-button { padding: 2px 7px; font-size: 11px; }
+.small-button:disabled { opacity: 0.35; cursor: default; }
+.empty-note { display: block; padding: 20px; color: #aab; }
+
+/* The ruler: pieces and blocks inside it are positioned by x (left) in pixels */
+.ruler-area { padding: 8px 0; }
+.ruler {
+  position: relative;
+  height: 48px;
+  margin: 0 20px;           /* same margin as .axis-labels, so the $ labels line up */
+  border-bottom: 1px solid #4a5263;
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.06);   /* faint line every $5 */
+}
+.tick.major { background: rgba(255, 255, 255, 0.22); }  /* stronger line every $50 */
+
+/* Stage 4 blocks. Stage 4.2: only "past the end of this chain" is left
+   (the dotted "starting ship" and gray "applied" blocks are gone). */
+.block {
+  position: absolute;
+  top: 6px;
+  height: 26px;
+  box-sizing: border-box;
+  border-radius: 5px;
+  font-size: 11px;
+  padding-left: 4px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;     /* never gets in the way of dragging */
+}
+.block.beyond  { top: 0; height: 100%; border-radius: 0; border-left: 2px solid #aab;
+                 background: rgba(0, 0, 0, 0.28); }
+
+/* A piece sitting in a ruler */
+.piece.placed { position: absolute; top: 6px; }
+
+/* While dragging: the floating copy follows the mouse */
+.piece.ghost {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;   /* the mouse "sees through" it to the row underneath */
+  opacity: 0.9;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  cursor: grabbing;
+}
+.drag-source { opacity: 0.3; }   /* the original, faded while you drag */
+
+/* The target slot: the ONE place a piece can go in this row */
+.slot {
+  position: absolute;
+  top: 4px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 2px solid #ffffff;
+  border-radius: 6px;
+  pointer-events: none;
+}
+.chain-row.hover .slot { background: rgba(255, 255, 255, 0.2); border-width: 3px; }
+.slot.overlap { border: 2px dashed #ff5252; }
+.chain-row.hover .slot.overlap { background: rgba(255, 82, 82, 0.15); }
+.slot-text {
+  position: absolute;
+  top: 29px;
+  left: 0;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+  color: #ffffff;
+}
+.slot.overlap .slot-text { color: #ff8a80; }
+
+/* ---------- NEW in Stage 3 ---------- */
+
+/* Totals bar under the header: one small box per number */
+.totals { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.total {
+  background: #222733;
+  border-radius: 6px;
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;   /* name on top, number below */
+  cursor: help;             /* hover shows what the number means */
+}
+.total-name  { font-size: 11px; color: #8a93a3; text-transform: uppercase; letter-spacing: 1px; }
+.total-value { font-size: 18px; font-weight: bold; }
+
+/* A flagged piece: red, with cross-hatching and a ✗ in its text (not color alone) */
+.piece.flagged, .swatch.flagged {
+  background-color: #e53935;
+  background-image: repeating-linear-gradient(-45deg, rgba(0,0,0,0.25) 0 3px, transparent 3px 8px);
+  color: #fff;
+}
+
+/* A missing stretch: yellow with a dashed border and the word "missing".
+   .missing-key is the little square in the color key at the top. */
+.gap, .missing-key {
+  background-color: #f2c94c;
+  border: 2px dashed #6b4e00;
+  box-sizing: border-box;
+}
+.gap {
+  position: absolute;
+  top: 6px;
+  height: 26px;
+  border-radius: 5px;
+  color: #3a2c00;
+  font-size: 11px;
+  font-weight: bold;
+  padding-left: 4px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;    /* never gets in the way of dragging */
+}
+
+/* Row status badges (the green .badge is from Stage 2) */
+.badge.missing { border-color: #f2c94c; color: #f2c94c; }
+.badge.flag    { border-color: #e53935; color: #ff8a80; }
+.start-note    { color: #e8e8e8; font-style: italic; }
+.row-totals    { color: #8a93a3; font-size: 12px; }
+
+/* List of problems under a row's ruler. sticky = stays in view (just right of the
+   pinned label column) when scrolling sideways. */
+.flag-list {
+  position: sticky;
+  left: 270px;
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  padding: 4px 20px 0;
+  font-size: 12px;
+  color: #ff8a80;
+}
+
+/* ---------- NEW in Stage 3.1: speculative prices ---------- */
+.spec-toggle { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.spec-toggle input { width: 16px; height: 16px; cursor: pointer; }
+.spec-note { margin-left: 16px; color: #aab; font-style: italic; white-space: nowrap; }   /* 4.3: nowrap = if it wraps, the whole note moves down together */
+
+
+/* ---------- NEW in Stage 4 ---------- */
+
+/* Chains panel heading with its buttons */
+.panel-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.panel-head h2 { margin: 0 8px 0 0; }
+.panel-head button { padding: 4px 10px; font-size: 13px; }
+#addChainButton { background: #3a7bd5; border-color: #3a7bd5; }
+
+/* "Your ships" box (a <details> you can open and close) */
+#shipsBox { margin-bottom: 12px; font-size: 13px; }
+#shipsBox summary { cursor: pointer; color: #aab; font-size: 16px; margin-bottom: 6px; }
+#shipsList { max-height: 160px; overflow: auto; color: #aab; }   /* about 8 ships, then it scrolls */
+/* Stage 4.2: a grid with 5 fixed columns (name, price, paid, badge, ✕), so every line lines up */
+.ship-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px 62px 54px 22px;
+  gap: 5px;
+  align-items: center;
+  padding: 2px 0;
+}
+.ship-name  { color: #e8e8e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ship-ins   { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+.paid-note { display: block; font-size: 11px; color: #8a93a3; font-style: italic; }
+.ship-paid  { color: #8a93a3; }
+.lti-badge {
+  /* Stage 4.3: a solid red pill with white text, like the LTI tag on CCU Game.
+     White on #dc2626 has a contrast of about 4.8 : 1, readable even this small. */
+  padding: 0 7px;
+  border: 1px solid #dc2626;   /* same color as the fill, so it looks borderless */
+  border-radius: 999px;        /* "as round as possible" = a pill shape */
+  background: #dc2626;
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+/* The Add / Edit chain form (a <dialog> pop-up) */
+dialog {
+  background: #2a303c;
+  color: #e8e8e8;
+  border: 1px solid #5a6272;
+  border-radius: 10px;
+  padding: 18px 22px;
+  width: 460px;
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.55); }   /* darkens the page behind it */
+dialog h3 { margin: 0 0 12px; }
+dialog label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: #aab; flex: 1; min-width: 0; }
+dialog fieldset {
+  display: flex;
+  gap: 10px;
+  border: 1px solid #454d5c;
+  border-radius: 6px;
+  margin: 10px 0;
+  padding: 6px 10px 10px;
+}
+dialog legend { font-size: 12px; color: #aab; padding: 0 4px; }
+dialog input, dialog select {
+  width: 100%;              /* fill the label, never wider */
+  box-sizing: border-box;
+  min-width: 0;
+  background: #1b1f27;
+  color: #e8e8e8;
+  border: 1px solid #5a6272;
+  border-radius: 5px;
+  padding: 6px;
+  font-size: 14px;
+}
+dialog fieldset .price-label { flex: 0 0 82px; }   /* price boxes are narrow */
+.form-hint { font-size: 12px; color: #8a93a3; margin: 6px 0; }
+#formErrors { display: flex; flex-direction: column; gap: 2px; }
+.form-error { color: #ff8a80; font-size: 13px; }
+.form-buttons { display: flex; gap: 10px; margin-top: 12px; }
+button.primary { background: #3a7bd5; border-color: #3a7bd5; }
+
+
+/* ---------- NEW in Stage 4.2: starter ships ---------- */
+
+/* A starter ship piece: gray, so it never looks like a (green/blue) CCU.
+   It runs from $0 to the ship's price.
+   Stage 4.3: violet #a78bfa became gray #9ca3af (like CCU Game). The name text is
+   near-black #111 (the same as the CCU pieces): on this mid gray that's a contrast of
+   about 8 : 1 (easy to read), while white text would only be about 2.4 : 1 (too faint).
+   So dark text it is. */
+.piece.ship, .ship-key { background-color: #9ca3af; }
+.piece.ship { color: #111; gap: 6px; padding-left: 5px; }
+.piece-text { overflow: hidden; text-overflow: ellipsis; }
+
+/* The small "LTI" tag inside a ship piece.
+   Stage 4.3: same red pill as .lti-badge (CCU Game style). Red with white text also
+   stands out clearly on the gray ship piece. */
+.lti-tag {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border: 1px solid #dc2626;   /* same color as the fill */
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 13px;
+  margin-right: 3px;           /* a little air before the piece's right edge */
+}
+
+/* A PLANNED ship: dashed outline, see-through, and the word "planned" in its text.
+   (Stage 4.3: gray too. The fill is the same gray, 16% see-through, so the text sits
+   on the dark page and is light #e5e7eb instead of near-black.) */
+.piece.ship.planned, .planned-key {
+  background-color: rgba(156, 163, 175, 0.16);
+  border: 2px dashed #9ca3af;
+}
+.piece.ship.planned { color: #e5e7eb; }
+/* A flagged ship keeps the red cross-hatching from Stage 3 (this rule wins over the gray) */
+.piece.ship.flagged { background-color: #e53935; color: #fff; }
+
+/* Group headings in the stack: "Starter ships" and "CCUs" */
+.group-title {
+  font-size: 12px;
+  color: #8a93a3;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #3b4250;
+  padding-bottom: 2px;
+  margin-top: 4px;
+}
+.group-note { font-size: 13px; color: #aab; }
+.label .small-button { margin-left: 6px; }
+/* Stage 4.3: was violet like the old ships; now a darker gray that matches them */
+#addShipButton { background: #6b7280; border-color: #6b7280; }
+
+/* "Your ships" list: planned badge and where the ship is placed */
+.planned-badge {
+  padding: 0 6px;
+  border: 1px dashed #9ca3af;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #e5e7eb;
+}
+/* A ship that is on a chain gets a small gray dot after its name */
+.ship-line.on-chain .ship-name::after { content: " ●"; color: #9ca3af; font-size: 10px; }
+.ship-line .small-button { padding: 0 4px; line-height: 16px; }
+.ship-line .lti-badge, .ship-line .planned-badge { justify-self: start; }   /* don't stretch to the column width */
+
+
+/* ---------- NEW in Stage 4.3 ---------- */
+
+/* Save to file / Load from file / ? Help. This group is the third line of the
+   header, below the title and CSV buttons. */
+#helpButton { background: #3a7bd5; border-color: #3a7bd5; font-weight: bold; }
+
+/* Speculative price COLLISION: orange, dotted dark-orange border and a ⚠ in the text.
+   Different from red (✗ flagged: names or overlaps) and yellow (missing money).
+   .swatch.collision is the little square in the color key. */
+.piece.collision, .swatch.collision {
+  background-color: #f97316;
+  background-image: none;          /* no buyback stripes: the warning is what matters */
+  border: 2px dotted #7c2d12;
+  color: #1c0a00;                  /* near-black on orange: about 8 : 1 contrast */
+}
+.piece.collision.placed { z-index: 2; }   /* drawn on top, so it's never hidden */
+/* The piece BEFORE a collapsed hop (a ship or CCU whose next step can't exist) */
+.piece.collision-edge { outline: 3px solid #f97316; outline-offset: -1px; }
+.badge.spec-warn { border-color: #f97316; color: #fdba74; }
+.flag-note.warn-note { color: #fdba74; }   /* orange text under the ruler, starts with ⚠ */
+/* Long notes wrap onto a second line instead of running off the right edge of the panel */
+.flag-note { max-width: 540px; }
+
+/* The first-run welcome pop-up (a <dialog>, like the forms) */
+#welcomeDialog { width: 540px; }   /* (Stage 4.6: 600px, see the end of this file) */
+#welcomeDialog ol { margin: 8px 0 10px; padding-left: 22px; line-height: 1.45; font-size: 14px; }
+#welcomeDialog li { margin-bottom: 4px; }
+#welcomeDialog .form-hint { font-size: 12px; }
+/* The "Don't show this again" line: checkbox and text side by side (dialog labels are
+   normally stacked, see "dialog label" above) */
+#welcomeDialog label.inline-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: #e8e8e8;
+  cursor: pointer;
+}
+#welcomeDialog label.inline-check input { width: 16px; height: 16px; margin: 0; }
+
+
+/* ---------- NEW: logo and credit ---------- */
+
+/* The logo left of the title. border-radius: 50% turns the square picture into a circle;
+   object-fit: cover keeps it from being squashed if the size ever changes. */
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #5a6272;
+  flex-shrink: 0;           /* never squeezed when the window is narrow */
+}
+/* "by Dreadpirate69" next to the title: small and gray */
+.credit { font-size: 13px; color: #8a93a3; align-self: flex-end; margin-bottom: 9px; }
+
+/* Credits links in the welcome pop-up: light blue so they read as links on the dark box */
+#welcomeDialog .credits-note a, #welcomeDialog ol a { color: #93c5fd; }
+
+/* ---------- NEW: "Try example data" ---------- */
+/* The orange pill next to the title while the made-up example data is loaded.
+   Dark text on orange is easy to read (about 8 : 1 contrast). */
+.example-badge {
+  background: #f97316;
+  color: #1c0a00;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 3px 10px;
+  border-radius: 999px;     /* 999px = fully round ends, a "pill" */
+  white-space: nowrap;
+}
+/* Stay hidden while app.js sets "hidden", even if a display rule is added above */
+.example-badge[hidden] { display: none; }
+/* The "No CSV yet?" line in the welcome pop-up: a little brighter than the gray hints */
+#welcomeDialog .example-hint { font-size: 13px; color: #fdba74; margin: 6px 0; }
+
+/* ---------- NEW in Stage 4.4: likely warbonds ★ and the shopping list ---------- */
+
+/* A likely warbond piece: TEAL with a dashed dark-teal border and a ★ in its text.
+   Teal is used nowhere else (green = hangar, blue = buyback, red = flagged, yellow = missing,
+   gray = ships, orange = spec collision). Dashed like a planned ship: you don't own it.
+   Near-black text on #14b8a6 has a contrast of about 7.5 : 1 (easy to read).
+   .wb-key is the little square in the color key. */
+.piece.wb, .swatch.wb-key {
+  background-color: #14b8a6;
+  background-image: none;
+  border: 2px dashed #134e4a;
+  color: #042f2e;
+}
+/* A flagged ★ piece turns red like any other flagged piece (this rule comes later, so it wins) */
+.piece.wb.flagged { background-color: #e53935; color: #fff; }
+/* The small ★ piece in the list: as wide as its text */
+.piece.wb.chip { width: auto; padding: 0 6px; }
+
+/* A yellow gap can be clicked to filter the list (4.4). The one you clicked gets a teal outline. */
+.gap { pointer-events: auto; cursor: pointer; }
+.gap.selected { outline: 3px solid #14b8a6; outline-offset: 1px; }
+
+/* The chain whose likely warbonds are listed: a teal bar on the left of its name */
+.chain-label { cursor: pointer; }
+.chain-row.selected .chain-label { box-shadow: inset 4px 0 0 #14b8a6; background: #1f2f35; }
+.chain-row.selected .chain-label strong { color: #5eead4; }
+.wb-note { color: #5eead4; }
+
+/* The "Suggested warbonds" section in the left column (a <details> like "Your ships") */
+#warbondBox { margin-bottom: 12px; font-size: 13px; }
+#warbondBox summary { cursor: pointer; color: #5eead4; font-size: 16px; margin-bottom: 4px; }
+.wb-updated { margin: 2px 0; font-size: 11px; color: #fcd34d; }   /* "Prices last updated ..." */
+.wb-for { margin: 2px 0 6px; font-size: 12px; color: #aab; }
+.wb-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  border: 1px solid #14b8a6;
+  border-radius: 6px;
+  background: #16302f;
+  color: #ccfbf1;
+  font-size: 12px;
+}
+.wb-filter-bar[hidden] { display: none; }   /* stay hidden while app.js says so */
+.wb-range { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px; color: #aab; }
+.wb-range input {
+  width: 58px;
+  background: #1b1f27;
+  color: #e8e8e8;
+  border: 1px solid #5a6272;
+  border-radius: 5px;
+  padding: 3px 5px;
+}
+/* The list scrolls on its own, so the pieces below stay in view */
+#warbondList { max-height: 210px; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+.wb-item { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 6px; border-bottom: 1px solid #333a48; }
+.wb-item.not-possible { opacity: 0.6; }
+.wb-top { display: flex; align-items: center; gap: 8px; }
+.wb-ship { color: #e8e8e8; font-weight: bold; }
+.wb-price { color: #8a93a3; font-size: 12px; }
+.wb-meta { font-size: 11px; color: #aab; }
+.wb-cost { font-size: 12px; color: #5eead4; }
+.wb-cost.bad { color: #ff8a80; }
+.wb-past-end { font-size: 11px; color: #8a93a3; font-style: italic; }
+/* Tags: words in small pills (outlined, so they never look like pieces) */
+.wb-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.wb-tag { font-size: 10px; padding: 0 6px; border: 1px solid; border-radius: 999px; line-height: 15px; cursor: help; }
+.tag-unconfirmed { border-color: #f87171; color: #fca5a5; }
+.tag-lower       { border-color: #fbbf24; color: #fde68a; }
+.tag-changed     { border-color: #93c5fd; color: #bfdbfe; }
+
+/* The 🛒 button in the Save / Load / Help row, and the pop-up */
+#shopButton { border-color: #14b8a6; color: #ccfbf1; }
+#shopDialog { width: 560px; }
+#shopLines { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow: auto; margin: 8px 0; }
+.shop-line {
+  display: grid;
+  grid-template-columns: 1fr auto;   /* the CCU on the left, the cash on the right */
+  gap: 2px 10px;
+  padding: 6px 8px;
+  border: 1px dashed #14b8a6;
+  border-radius: 6px;
+}
+.shop-ccu  { font-weight: bold; }
+.shop-cash { font-weight: bold; color: #5eead4; text-align: right; }
+.shop-meta { grid-column: 1 / -1; font-size: 12px; color: #aab; }   /* spans both columns */
+.shop-line .wb-tags { grid-column: 1 / -1; }
+.shop-total { font-size: 16px; font-weight: bold; margin: 8px 0 0; }
+/* "Email to myself" is a link dressed like a button */
+.button-link {
+  display: inline-block;
+  background: #3b4250;
+  color: #e8e8e8;
+  border: 1px solid #5a6272;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  text-decoration: none;
+}
+.button-link:hover { background: #4a5263; }
+/* The welcome pop-up: the "No CSV yet?" line now sits inside step 1 */
+#welcomeDialog li .example-hint { margin: 2px 0 0 14px; } /* a little indent: it belongs to step 1 */
+
+/* ---------- NEW in Stage 4.5: plan a gap with warbond AND standard CCUs ---------- */
+
+/* The small "WB" badge: a dark pill inside a teal piece (and in the list and shopping list).
+   A teal piece WITHOUT it is a planned standard CCU (store credit, estimated). */
+.wb-badge, .key-wb-badge {
+  display: inline-block;
+  background: #134e4a;          /* the dark teal of the dashed border */
+  color: #f0fdfa;               /* almost white: easy to read on the dark teal */
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 13px;
+  padding: 0 4px;
+  margin: 0 4px;                /* a little space on both sides (spaces next to it are hidden in a flex piece) */
+  border-radius: 999px;         /* 999px = fully round ends, a "pill" */
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.key-wb-badge { margin-left: 12px; vertical-align: middle; }
+.piece.wb.chip .wb-badge { margin-right: 0; }
+
+/* The planning list gets more room while a gap is selected (it can be long). The "For Galaxy ..."
+   line is hidden then: the bar above the list already says which gap of which chain. */
+#warbondBox.gap-mode #warbondList { max-height: 300px; }
+#warbondBox.gap-mode .wb-for { display: none; }
+/* If the left column gets too full (a long planning list on a small screen), the whole column
+   scrolls inside its panel instead of pushing the page down. Your CCUs always keep some room. */
+.layout > .panel:first-child { overflow-y: auto; }
+#stack { min-height: 140px; }
+.gap-item { padding: 3px 0 5px; gap: 1px; }
+.gap-item .piece.wb.chip { height: 20px; }   /* a smaller chip, so more lines fit */
+.gap-meta { align-items: center; }
+.tag-est { border-color: #5eead4; color: #99f6e4; }   /* the "estimated" tag on standard CCUs */
+
+/* The bar above the list: title, "Show all" and "clear" on one line (wraps if narrow),
+   then the short note about what is listed on its own line */
+.wb-filter-bar { flex-wrap: wrap; row-gap: 2px; }
+.wb-filter-text { font-weight: bold; }
+.wb-show-all { display: flex; align-items: center; gap: 3px; cursor: pointer; white-space: nowrap; }
+.wb-cap-note { flex-basis: 100%; font-size: 11px; color: #99f6e4; }
+
+/* Shopping list: first column = the WB badge (empty for a standard CCU) */
+.shop-line { grid-template-columns: auto 1fr auto; }
+.shop-kind { min-width: 30px; }
+.shop-credit { color: #99f6e4; }
+.shop-credit-total { margin-top: 2px; }
+.shop-credit-total[hidden] { display: none; }
+
+
+/* ---------- NEW in Stage 4.6: fan site notices and the "Made by the Community" logo ---------- */
+
+/* CIG's official logo, top-right of the header. Only its SIZE is set here: height 48px and
+   width: auto, so it keeps its own shape. No filter, opacity, transform or shadow: the Fankit
+   rules say the logo must be used as it is. It's white with a see-through background, so it
+   shows up well on the dark page. */
+.community-badge {
+  height: 48px;
+  width: auto;
+  flex-shrink: 0;           /* never squeezed when the window is narrow */
+}
+
+/* The notice bar under the header: a slim box across the whole width. The text is 13.5px
+   (just over 10pt, the smallest size the rules allow) in a light color on a dark box, so it
+   is easy to read (about 12 : 1 contrast). The notices flow one after the other. */
+.notice-bar {
+  margin-top: 8px;
+  padding: 5px 12px;
+  background: #242b38;
+  border: 1px solid #3a4456;
+  border-left: 3px solid #93c5fd;
+  border-radius: 6px;
+  flex-shrink: 0;           /* the page column never squeezes it; the panels give up room */
+}
+.notice-text { margin: 0; font-size: 13.5px; line-height: 1.35; color: #dde3ec; }
+.notice-text .notice { margin-right: 8px; }
+.notice-bar a { color: #93c5fd; }
+
+/* The same notices in the ? Help / welcome pop-up, next to a smaller copy of the logo */
+#welcomeDialog { width: 600px; }
+#welcomeDialog .welcome-notices {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 8px 0;
+  padding: 8px 10px;
+  background: #242b38;
+  border: 1px solid #3a4456;
+  border-radius: 6px;
+}
+#welcomeDialog .welcome-notices .community-badge { height: 40px; }
+#welcomeDialog .welcome-notices .notice { margin: 0 0 6px; font-size: 13.5px; line-height: 1.4; color: #dde3ec; }
+#welcomeDialog .welcome-notices .notice:last-child { margin-bottom: 0; }
+#welcomeDialog .welcome-notices a { color: #93c5fd; }
+
+
+/* ---------- NEW in 4.7 ---------- */
+
+/* Shopping list sections: a title line ("Warbond CCUs (cash)" ... "2 · ~$55 cash") above each group */
+.shop-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 6px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #14b8a6;
+}
+.shop-section:first-child { margin-top: 0; }
+.shop-section-title { font-weight: bold; color: #5eead4; font-size: 14px; }
+.shop-section-count { font-size: 12px; color: #99f6e4; }
+.shop-section-note { font-size: 11px; color: #aab; font-style: italic; }
+.shop-total[hidden] { display: none; }
+
+/* "Autosaved 4:52 PM · Saved to file ..." next to the header buttons: small and quiet */
+.save-status { font-size: 11px; color: #8a93a3; }
+/* Only shown when the browser refuses to save: orange outline, like the spec warnings */
+.save-warning {
+  font-size: 12px;
+  color: #fdba74;
+  border: 1px solid #f97316;
+  border-radius: 999px;
+  padding: 1px 8px;
+  cursor: help;
+}
+.save-warning[hidden] { display: none; }
+/* The one-time backup tip after your first CSV: a slim box under the header buttons */
+.backup-tip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #dde3ec;
+  background: #242b38;
+  border: 1px solid #3a4456;
+  border-left: 3px solid #fcd34d;
+  border-radius: 6px;
+}
+.backup-tip[hidden] { display: none; }
+
+/* "no LTI · 6 months" on a chain whose starter ship isn't LTI: an outlined pill, not a red flag */
+.ins-flag {
+  align-self: flex-start;
+  font-size: 10px;
+  line-height: 15px;
+  padding: 0 6px;
+  border: 1px solid #fbbf24;
+  border-radius: 999px;
+  color: #fde68a;
+  cursor: help;
+}
+
+/* 4.7: the left column, top to bottom: "Your ships" (open), "Your CCUs (owned)" (the stack),
+   then "Suggested warbonds". All three scroll on their own:
+   - Your ships is only as tall as its list, but never more than 15% of the window (15vh).
+     When room is short it gives up height first, down to about two lines (min-height).
+   - The stack and the warbond box SHARE what's left (flex: 1 1 0 = "split the free room";
+     the warbond box gets a bit more), so a big CCU Game export never pushes the suggestions
+     out of reach. If the window is very short, the min-heights win and the whole column scrolls. */
+#shipsBox { flex: 0 1 auto; max-height: 15vh; min-height: 52px; overflow-y: auto; margin-bottom: 10px; }
+#shipsBox:not([open]) { flex: none; min-height: 0; }      /* folded: just its title line */
+#shipsBox #shipsList { max-height: none; overflow: visible; }   /* the box scrolls, not the list */
+#shipsBox > summary { position: sticky; top: 0; z-index: 2; background: #222733; }  /* title stays put */
+#stack { flex: 1 1 0; min-height: 72px; margin-bottom: 12px; }
+#warbondBox { flex: 1.3 1 0; min-height: 140px; overflow-y: auto; margin-bottom: 0; }
+#warbondBox:not([open]) { flex: none; min-height: 0; }   /* closed: just its title line */
+#warbondBox #warbondList, #warbondBox.gap-mode #warbondList { max-height: none; overflow: visible; }  /* the box scrolls, not the list */
+/* NEW in 4.7: the warbond title (and the gap filter bar under it) stick to the top of the box
+   while you scroll the list, so you always see which box you're in and can click "Show all" */
+#warbondBox > summary { position: sticky; top: 0; z-index: 2; background: #222733; padding-bottom: 2px; }
+/* "(not owned, past prices)" after the section name: smaller and grayer, so the name stands out */
+#warbondBox summary .summary-note { font-size: 12px; color: #8a93a3; }
+/* The soft "warbonds under $100 have become rare" line under the heading: small, gray, italic */
+.wb-rare-note { margin: 0 0 2px; font-size: 11px; color: #8a93a3; font-style: italic; }
+/* "Prices come from your CCU Game export ..." in the Help pop-up, under step 1 */
+#welcomeDialog .price-source-hint { margin: 2px 0 0 14px; font-size: 12px; color: #aab; }
