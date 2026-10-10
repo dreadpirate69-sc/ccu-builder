@@ -2,7 +2,7 @@
 
 **Try it online:** https://dreadpirate69-sc.github.io/ccu-builder/
 
-Plan your Star Citizen CCU upgrade chains on a price ruler, using the CSV exports from CCU Game.
+Plan your Star Citizen CCU upgrade chains on a price ruler, using the CSV exports from CCU Game App (https://ccugame.app/).
 Everything runs in your browser, on your own computer. No account, no install, no internet needed
 (except for the links).
 
