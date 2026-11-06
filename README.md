@@ -1,32 +1,30 @@
-# CCU Builder 1.0
+# CCU Builder 1.1
 
-**Try it online:** https://dreadpirate69-sc.github.io/ccu-builder/
+One codebase for local use and GitHub Pages (https://dreadpirate69-sc.github.io/ccu-builder/).
 
-Plan your Star Citizen CCU upgrade chains on a price ruler, using the CSV exports from CCU Game App (https://ccugame.app/).
+Plan your Star Citizen CCU upgrade chains on a price ruler, using the CSV exports from CCU Game.
 Everything runs in your browser, on your own computer. No account, no install, no internet needed
-(except for the links).
+(except for the links). Your hangar, chains and buybacks live only in your browser save / Save-to-file
+JSON — nothing personal is baked into these files.
 
-Built by Dreadpirate69. Free, non-commercial fan tool.
+Built by Dreadpirate69. Free, non-commercial fan tool. MIT License (see LICENSE).
 
 Credits: CCU and ship data come from your exports from CCU Game (https://ccugame.app/).
 Community price estimates come from the Release Price Speculation tab of the community's
 Star Citizen Stuff sheet (https://docs.google.com/spreadsheets/d/1TqVcGcfSZBX4CZaqt4JxyUGZcByutNwo1pRBW29zzpE/edit?gid=2139030025#gid=2139030025).
 Past warbond sale prices (warbonds.js) come from CCU Game's CCU price history
 (https://ccugame.app/) and the TEST Squadron "WB CCU Watch" sale threads
-(https://testsquadron.com/), plus a few reddit sale posts.
+(https://testsquadron.com/), plus a few reddit sale posts / Starnotifier (monthly updates).
 Thanks to all of them. This app wouldn't exist without them.
 
 ## Setup (one time)
-**Online:** open https://dreadpirate69-sc.github.io/ccu-builder/ in your browser. Nothing to install.
-
-**Offline (on your own computer):**
-1. Download the files (on GitHub: the green **Code** button, then **Download ZIP**) and unzip
-   them anywhere you like (for example Documents\ccu-builder). Keep all the files together in
-   one folder: index.html, CCU-Builder.html, app.js, chains.js, prices.js, example.js,
-   warbonds.js, style.css, logo.png (the round picture next to the title), community.png
-   (CIG's "Made by the Community" logo, top right), README.md and LICENSE.
-2. Double-click **CCU-Builder.html** (or **index.html**, it's the same page). It opens in your
-   browser. That's it.
+1. Unzip it anywhere you like (for example Documents\ccu-builder). You get a folder with
+   CCU-Builder.html, index.html (same app, for GitHub Pages), app.js, chains.js, prices.js,
+   example.js, warbonds.js, style.css, README.md, LICENSE, logo.png and community.png.
+   Keep them together.
+2. Double-click **CCU-Builder.html**. It opens in your browser. That's it.
+3. To publish: push this folder to dreadpirate69-sc/ccu-builder (GitHub Pages from main/root).
+   index.html is the Pages entry; CCU-Builder.html is the local entry. They are the same app.
 
 ## Getting your data
 - In CCU Game, export your **CCUs** and your **ships** as CSV files.
@@ -63,7 +61,7 @@ Thanks to all of them. This app wouldn't exist without them.
 
 **Suggested warbonds ★ (not owned, past prices).** Click a chain's name and this box (left
 column, below your CCUs) lists past warbond sales that could fill it. Drag a teal ★ piece onto a chain to plan it.
-- The prices come from warbonds.js (last updated 2026-09-30). They are **past sale prices,
+- The prices come from warbonds.js (last updated 2026-11-02; refreshed for IAE prep 2026-11-06). They are **past sale prices,
   not a promise** the sale comes back. Always double-check on RSI before you buy.
 - Tags: **unconfirmed** (weaker source), **lower confidence** (only the sale price is known),
   **price changed since** (the ship costs something else now).
@@ -84,7 +82,9 @@ added up as **cash** ("Planned at last-seen WB"), planned standard CCUs as **sto
 
 **Speculative prices.** Tick the "Speculative prices*" box to show concept ships at the community's
 guessed release price instead of today's store price. Untick it to go back; nothing gets moved. An orange ⚠
-means two guesses contradict each other (not your mistake).
+means two guesses contradict each other (not your mistake). With the box ticked, ships that have **no store
+price yet** (for example Drake Marauder, Gatac Hyūn, RSI Skylark) are also offered in suggested warbond and
+standard CCU lists at their community sheet guess, marked **speculative*** — never as official RSI prices.
 
 ## Saving your work
 - The page saves by itself in your browser, so closing and reopening usually keeps everything.
@@ -104,7 +104,9 @@ means two guesses contradict each other (not your mistake).
 - Prices for concept ships are community estimates, not official.
 - Warbond prices are what ships sold for in the past. They change and come and go.
 - Warbonds under $100 have become rare. Past sales below that may not come back.
-- Feedback and bug reports are very welcome (on GitHub: the **Issues** tab).
+- Constellation Mk V Centaurus is offered like any other ship when it fits a chain (warbond history keeps its
+  WB $275 / std $300). Other Mk V names with no real price stay out of the data files.
+- Feedback and bug reports are very welcome.
 
 ## Notices
 This is an unofficial Star Citizen fan site, not affiliated with the Cloud Imperium group of companies. All content on this site not authored by its host or users are property of their respective owners.
@@ -124,9 +126,3 @@ shown at a smaller size), under the Star Citizen Fankit Agreement.
 manufacturer (for example Anvil, Aegis, Drake or Origin). Section 2(k) of the Fankit Agreement
 also asks you to send the site's URL to legal_notices@cloudimperiumgames.com. Keep the notices
 above and the logo on the page, and keep it free and non-commercial.
-
-## License
-The app's code is free to use under the MIT License (see LICENSE), copyright dreadpirate69-sc. That covers only
-Dreadpirate69's own code and text. Star Citizen names, ship names and the "Made by the
-Community" logo belong to Cloud Imperium and are used under the Fankit Agreement, not under
-the MIT License.

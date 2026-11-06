@@ -7,7 +7,13 @@
 //   store - the ship's price in the store today, as the sheet lists it (null = not on sale)
 //   spec  - the community consensus: the MEDIAN (middle) guess. Not official!
 //
-// Source: community "Release Price Speculation" sheet, snapshot 28 Sep 2026.
+// Source: community "Release Price Speculation" sheet (gid 1790730962), re-checked 2026-11-06.
+// Store prices for Galaxy ($380) and Liberator ($575) also match starcitizen.tools (wiki).
+// IAE 2956 prep: Galaxy & Liberator passed final review (Oct 2026 Monthly Report / wiki Liberator);
+// they stay at concept store prices here until RSI posts a flyable bump.
+// No approved store price yet: Drake Marauder, Gatac Hyūn, Greycat MFC, Andromeda MKV.
+// Skylark is in-game with Centaurus; wiki lists Pledge: No — keep store null (sheet avg guess $50).
+// Legionnaire / Vulcan stay on hold (do not plan buys around them).
 // Only ships marked Concept or Production (= not released yet) are listed, plus
 // Carrack as a released-price entry for the generic example chain.
 // Names are spelled like CCU Game spells them, because that's how they are matched
@@ -20,7 +26,7 @@
 
 const SPEC_PRICES = {
   // ---- big concept / in-production ships (19 guesses each unless noted) ----
-  "Galaxy":           { store: 380,  spec: 440  },  // standalone store $380 verified at starcitizen.tools; spec sheet guess $440
+  "Galaxy":           { store: 380,  spec: 440  },  // store $380 (starcitizen.tools + sheet 2026-11-06); spec ~$440; IAE release expected
   "Kraken":           { store: 1650, spec: 1950 },
   "Ranger CV":        { store: 35,   spec: 40   },  // sheet: "Ranger CV/RC"
   "Ranger RC":        { store: 35,   spec: 40   },  // sheet: "Ranger CV/RC"
@@ -38,7 +44,7 @@ const SPEC_PRICES = {
   "Genesis":          { store: 400,  spec: 500  },
   "Hull D":           { store: 550,  spec: 675  },
   "Arrastra":         { store: 575,  spec: 650  },
-  "Liberator":        { store: 575,  spec: 675  },
+  "Liberator":        { store: 575,  spec: 675  },  // store $575 (starcitizen.tools + sheet 2026-11-06); sheet avg guess $686; final review for IAE 2956
   "Merchantman":      { store: 650,  spec: 975  },
   "Orion":            { store: 650,  spec: 900  },
   "Odyssey":          { store: 700,  spec: 800  },
@@ -52,16 +58,16 @@ const SPEC_PRICES = {
   // ---- smaller "straight to flyable" concepts: not on sale, so store is null ----
   // Names as on the sheet (not checked
   // against CCU Game spelling). Few guesses = weak consensus.
-  "Greycat MFC":       { store: null, spec: 50  },  // 10 guesses
+  "Greycat MFC":       { store: null, spec: 50  },  // no RSI store price yet (IAE candidate); sheet avg guess $51
   "Anvil HM6 Auxilia": { store: null, spec: 135 },  // 11 guesses
   "Forge":             { store: null, spec: 300 },  // 8 guesses
   "CSV-FM":            { store: null, spec: 75  },  // 9 guesses
   "Starlancer BLD":    { store: null, spec: 375 },  // 5 guesses
   "Zeus Mk II ST":     { store: null, spec: 220 },  // sheet: "Zeus ST", 6 guesses
-  "Andromeda MKV":     { store: null, spec: 250 },  // only 1 guess
-  "RSI Skylark":       { store: null, spec: 125 },  // only 1 guess
-  "Drake Marauder":    { store: null, spec: 90  },  // only 1 guess
-  "Gatac Hyūn":        { store: null, spec: 175 },  // only 1 guess
+  "Andromeda MKV":     { store: null, spec: 250 },  // no store price yet; Centaurus MKV released $300 (sheet 10/14/2026) — Andromeda MKV still unpriced
+  "RSI Skylark":       { store: null, spec: 50   },  // no pledge price (wiki Pledge: No); sheet avg guess $50
+  "Drake Marauder":    { store: null, spec: 170 },  // no store price yet; sheet avg guess $170 (2026-11-06)
+  "Gatac Hyūn":        { store: null, spec: 223 },  // no store price yet; sheet avg guess $223 (2026-11-06)
 
   // Released ship kept here so the generic Carrack example can auto-fill its price.
   "Carrack":           { store: 600,  spec: 600 }   // standalone store price verified at starcitizen.tools

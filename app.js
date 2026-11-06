@@ -1,5 +1,8 @@
 // app.js: what the page DOES.
+// CCU Builder 1.1 = public + local rename (was 4.9 Alpha IAE prep). Centaurus Mk V offered in suggestions;
+//           speculative community-sheet prices used in suggested WB/standard lists when Speculative prices* is ticked.
 // CCU Builder 1.0 = first public release (same features as the 4.8 test build, history below).
+// 4.9 = IAE 2956 prep: warbond DB refresh (2026-11-02), Cutlass Steel from CCU Game (Mk V filter removed in 1.1).
 // Stage 1 = read your CSV and draw one piece per CCU.
 // Stage 2 = draw your chains as price rulers, and let you drag pieces onto them.
 // Stage 3 = check ship names link up, show missing stretches in yellow, add up totals.
@@ -92,12 +95,6 @@ const WB_MIN_CASH = 5;
 // standard CCUs. With "Show all" ticked we draw at most this many lines (the list says so).
 const MAX_GAP_ITEMS = 200;
 
-// Stage 4.5: rumored "Mk V" ships (Taurus / Aquila / Phoenix Mk V ...) are never offered as
-// standard CCUs. A regular expression ("regex") is a text pattern: \b = a word edge,
-// \s* = any spaces, i = upper/lower case doesn't matter. So "Mk V", "MKV" and "mk v" match,
-// but "Mk IV" and "Mk II" don't.
-const RUMORED_SHIP = /\bmk\s*v\b/i;
-
 // ---- Grab the page elements we need (by the id we gave them in CCU-Builder.html) ----
 const csvInput      = document.getElementById("csvInput");
 const shipsInput    = document.getElementById("shipsInput");
@@ -171,14 +168,14 @@ const backupTipSave   = document.getElementById("backupTipSave");
 const backupTipClose  = document.getElementById("backupTipClose");
 
 // ---- The state: everything the page knows ----
-// ccus:   list of CCU objects, e.g. { id: "Cutlass Black → Cutlass Red #1", from: "Cutlass Black", ... }
+// ccus:   list of CCU objects, e.g. { id: "Herald → Gladius #1", from: "Herald", ... }
 // layout: which chain each placed CCU is in, by the chain's id,
-//         e.g. { "Cutlass Black → Cutlass Red #1": "galaxy" }. Not in layout = in the stack.
+//         e.g. { "Herald → Gladius #1": "perseus" }. Not in layout = in the stack.
 // chains: your chain rows (saved in the browser, see chains.js for the fields)
-// ships:  your ships from the ships CSV, e.g. { name: "Starfarer", insurance: "LTI", msrp: 300, paid: 250, place: "hangar" }
+// ships:  your ships from the ships CSV, e.g. { name: "Railen", insurance: "LTI", msrp: 400, paid: 350, place: "hangar" }
 // plannedShips: NEW in 4.2, ships you added by hand, e.g. { id: "planned-k3f9x2", name: "Aurora ES", price: 20 }
 // shipLayout:   NEW in 4.2, which chain each placed ship is in,
-//         e.g. { "ship:Starfarer #1": "galaxy" }. Not in shipLayout = in the stack.
+//         e.g. { "ship:Railen #1": "perseus" }. Not in shipLayout = in the stack.
 // useSpecPrices: true when the "Speculative prices*" box is ticked
 // usingExampleData: NEW, true while the made-up data from example.js is loaded
 // warbondPieces: NEW in 4.4, the teal ★ likely warbond pieces placed on chains, e.g.
@@ -305,7 +302,7 @@ function rowsToCCUs(rows) {
     // A row with count 2 means you own two copies: make one piece for each.
     for (let n = 0; n < count; n++) {
       const from = r[col("from")], to = r[col("to")];
-      // A stable id, like "Cutlass Black → Cutlass Red #2". Copies get #1, #2, ...
+      // A stable id, like "Herald → Gladius #2". Copies get #1, #2, ...
       const key = from + " → " + to;
       seen[key] = (seen[key] || 0) + 1;
       list.push({
@@ -364,7 +361,7 @@ function rowsToShips(rows) {
 // Gives back true if it loaded.
 function loadExampleData() {
   if (typeof EXAMPLE_CCUS_CSV === "undefined") {     // example.js is missing from the folder
-    alert("example.js is missing. Put it in the same folder as CCU-Builder.html / index.html.");
+    alert("example.js is missing. Put it in the same folder as CCU-Builder.html.");
     return false;
   }
   const hasRealData = !usingExampleData && (ccus.length > 0 || ships.length > 0);
@@ -556,7 +553,7 @@ function resetRow(chainId) {
 
 // All starter ships as pieces, owned first (cheapest first), then planned ones.
 // A piece looks like:
-//   { id: "ship:Starfarer #1", name: "Starfarer", price: 300, paid: 250, lti: true, planned: false }
+//   { id: "ship:Railen #1", name: "Railen", price: 400, paid: 350, lti: true, planned: false }
 // Two ships with the same name get #1, #2 (like CCU copies).
 function allShips() {
   const seen = {};
@@ -943,7 +940,7 @@ function priceText(ship, price) {
   return "$" + price + (usesSpec(ship) ? "*" : "");
 }
 
-// "Avenger Titan → G12 ($60–$65*)"
+// "Fury → G12 ($55–$65*)"
 function rangeText(c) {
   return `${c.from} → ${c.to} (${priceText(c.from, c.fromMsrp)}–${priceText(c.to, c.toMsrp)})`;
 }
@@ -1485,7 +1482,7 @@ function makeChainLabel(chain, pieces, info, index) {
   title.textContent = chain.name;
   label.appendChild(title);
 
-  // Stage 4.2: "ship: Starfarer $300 → Galaxy $380", or "no starter ship yet → Galaxy $380"
+  // Stage 4.2: "ship: Railen $400 → Perseus $800", or "no starter ship yet → Perseus $800"
   const ship = chain.ship;
   let text = ship
     ? `ship: ${ship.name} ${priceText(ship.name, ship.price)}${ship.planned ? " (planned)" : ""} → `
@@ -2814,6 +2811,7 @@ function warbondItems(chain, gap, range) {
   if (range && range.min !== null) list = list.filter(w => w.wb >= range.min);
   if (range && range.max !== null) list = list.filter(w => w.wb <= range.max);
   // (pastEnd = its normal price today is past this chain's end, so it can't be placed here)
+  // 1.1: Centaurus Mk V and other listed warbond targets are offered when they fit (no Mk V hide filter).
   if (!gap) return list.map(w => ({ entry: w, pastEnd: shownPrice(w.ship, warbondNow(w)) > chain.endPrice }));
   // Stage 4.5: a gap was clicked. Part 12 does the work (it also builds the standard options).
   const wb = gapWarbondOptions(chain, gap, range);
@@ -2913,7 +2911,7 @@ function drawWarbonds() {
   warbondFilterBar.hidden = true;
   if (!hasWarbondData()) {
     warbondCount.textContent = "0";
-    warbondFor.textContent = "warbonds.js is missing. Put it in the same folder as CCU-Builder.html / index.html.";
+    warbondFor.textContent = "warbonds.js is missing. Put it in the same folder as CCU-Builder.html.";
     return;
   }
   const id = currentChainId();
@@ -3003,7 +3001,7 @@ const SHOP_STD_NOTE  = "Standard prices are estimates from today's store prices 
 // NEW in 4.7: two sections, each numbered from 1 with its own subtotal, then both totals.
 // An empty section is left out. Example (one of each):
 //   CCU shopping list
-//   Warbond prices last updated: 2026-09-30, always double-check on RSI before you buy.
+//   Warbond prices last updated: 2026-11-02 (IAE prep / 1.1: Centaurus offered), always double-check on RSI before you buy.
 //
 //   WARBOND CCUs (cash)
 //   ...
@@ -3203,6 +3201,10 @@ function makeWbBadge() {
 const ESTIMATED_TAG = { text: "estimated", cls: "tag-est",
   why: "standard CCU price = the difference between today's store prices. CIG doesn't sell every pair " +
        "(especially concept ships), so check the real CCU on RSI." };
+// 1.1: when a suggested standard uses a community-sheet guess (no RSI store price yet)
+const SPECULATIVE_TAG = { text: "speculative*", cls: "tag-est",
+  why: "at least one end has no RSI store price yet. The dollar amount is the community Release Price " +
+       "Speculation sheet guess from prices.js — not official. Double-check on RSI before you buy." };
 
 // ---- the planned standard pieces (like the warbond pieces in part 11) ----
 
@@ -3285,8 +3287,15 @@ function makeStandardPiece(ccu, showNames) {
   let text = `★ $${ccu.cost} est.`;
   if (showNames) text += " " + ccu.from + " → " + ccu.to;
   piece.textContent = text;
+  const stdSpecOnly = (function () {
+    const a = specEntry(ccu.from), b = specEntry(ccu.to);
+    return !!(useSpecPrices && ((a && a.store === null) || (b && b.store === null)));
+  })();
   piece.title = `★ planned standard CCU, NOT owned: ${rangeText(ccu)} · ~$${ccu.cost} store credit, estimated ` +
-                `(today's store prices $${ccu.storeTo} − $${ccu.storeFrom}; CIG doesn't sell every pair) · double-check on RSI`;
+                (stdSpecOnly
+                  ? `(speculative community sheet prices $${ccu.storeTo}* − $${ccu.storeFrom}*; no RSI store price yet on at least one end)`
+                  : `(today's store prices $${ccu.storeTo} − $${ccu.storeFrom}; CIG doesn't sell every pair)`) +
+                ` · double-check on RSI`;
   piece.dataset.id = ccu.id;
   piece.dataset.kind = "std";
   piece.addEventListener("pointerdown", startDrag);
@@ -3296,26 +3305,36 @@ function makeStandardPiece(ccu, showNames) {
 // ---- which ships can a gap use? ----
 
 // The ship price list: every ship with a known STORE price in prices.js (concept ships) and
-// warbonds.js ("now" = today's store price). Never a made-up price. A ship that is in both
-// files takes its prices.js price. Not on sale (store null) and rumored Mk V ships are left out.
+// warbonds.js ("now" = today's store price). Never invent a price. A ship that is in both
+// files takes its prices.js price. Ships with store null stay out unless "Speculative prices*"
+// is ticked, in which case the community sheet spec guess is used and marked speculative.
 // NEW in 4.7: every ship in your loaded CSVs comes FIRST, at your CSV's price (part 2f), so
 // your export wins over both files; they only fill in ships your export never mentions.
-// Gives back a list of { name, store, source } (source = where the price comes from, in words).
+// Gives back a list of { name, store, source, specOnly } (specOnly = price is a sheet guess
+// with no RSI store price yet).
 function shipPriceList() {
   const list = [];
   const seen = new Set();          // a Set = a list where each value can only be once
-  const add = function (name, store, source) {
+  const add = function (name, store, source, specOnly) {
     const key = normalizeShip(name);
-    if (!key || seen.has(key) || !isNumber(store) || store <= 0 || RUMORED_SHIP.test(name)) return;
+    if (!key || seen.has(key) || !isNumber(store) || store <= 0) return;
     seen.add(key);
-    list.push({ name: name, store: store, source: source });
+    list.push({ name: name, store: store, source: source, specOnly: !!specOnly });
   };
-  for (const c of ccus) { add(c.from, csvPrice(c.from), csvSourceName()); add(c.to, csvPrice(c.to), csvSourceName()); }
-  for (const s of ships) add(s.name, csvPrice(s.name), csvSourceName());
+  for (const c of ccus) { add(c.from, csvPrice(c.from), csvSourceName(), false); add(c.to, csvPrice(c.to), csvSourceName(), false); }
+  for (const s of ships) add(s.name, csvPrice(s.name), csvSourceName(), false);
   if (typeof SPEC_PRICES !== "undefined") {
-    for (const name in SPEC_PRICES) add(name, SPEC_PRICES[name].store, "prices.js");
+    for (const name in SPEC_PRICES) {
+      const e = SPEC_PRICES[name];
+      if (isNumber(e.store) && e.store > 0) {
+        add(name, e.store, "prices.js", false);
+      } else if (useSpecPrices && isNumber(e.spec) && e.spec > 0) {
+        // No RSI store price yet: offer at the community sheet guess when Speculative prices* is on.
+        add(name, e.spec, "prices.js speculative (community sheet)", true);
+      }
+    }
   }
-  for (const w of warbondList()) add(w.ship, w.now, "warbonds.js");
+  for (const w of warbondList()) add(w.ship, w.now, "warbonds.js", false);
   return list;
 }
 
@@ -3346,13 +3365,13 @@ function gapEdges(chain, gap) {
 // Each one: { name, price (shown), store, edge: "start" / "end" / "" }
 function gapShips(gap, edges) {
   const list = [];
-  if (edges.start) list.push({ ...edges.start, edge: "start" });
-  if (edges.end) list.push({ ...edges.end, edge: "end" });
+  if (edges.start) list.push({ ...edges.start, edge: "start", specOnly: false });
+  if (edges.end) list.push({ ...edges.end, edge: "end", specOnly: false });
   const edgeNames = list.map(s => s.name);
   for (const s of shipPriceList()) {
     if (edgeNames.some(n => sameShip(n, s.name))) continue;    // already an edge ship
     const price = shownPrice(s.name, s.store);                  // speculative price when ticked
-    if (price > gap.from && price < gap.to) list.push({ name: s.name, price: price, store: s.store, edge: "" });
+    if (price > gap.from && price < gap.to) list.push({ name: s.name, price: price, store: s.store, edge: "", specOnly: !!s.specOnly });
   }
   list.sort((a, b) => a.price - b.price);
   return list;
@@ -3389,7 +3408,7 @@ function gapWarbondOptions(chain, gap, range) {
     const to = shownPrice(w.ship, warbondNow(w));        // 4.7: your CSV's price wins (part 2f)
     if (to <= gap.from || to > gap.to) continue;      // must land inside the gap
     if (to === gap.to && !(edges.end && sameShip(w.ship, edges.end.name))) continue;
-    if (sameShip(w.ship, edges.start.name) || RUMORED_SHIP.test(w.ship)) continue;
+    if (sameShip(w.ship, edges.start.name)) continue;
     const slot = slotForWarbond(w.ship, chain, null); // the SAME slot + cash rules as dragging
     if (!slot.fits || slot.overlap || slot.fromPrice !== gap.from) continue;
     const endsAtGap = to === gap.to;
@@ -3427,7 +3446,8 @@ function gapStandardOptions(chain, gap) {
         from: a.name, fromPrice: ccu.fromMsrp, fromStore: a.store,
         to: b.name, toPrice: ccu.toMsrp, toStore: b.store, cost: ccu.cost, possible: true,
         startsAtGap: a.edge === "start", endsAtGap: b.edge === "end",
-        closes: b.edge === "end", linked: b.edge === "end", rank: b.edge === "end" ? 0 : 2 });
+        closes: b.edge === "end", linked: b.edge === "end", rank: b.edge === "end" ? 0 : 2,
+        specOnly: !!(a.specOnly || b.specOnly) });
     }
   }
   return out.sort(compareGapOptions);
@@ -3497,16 +3517,25 @@ function makeGapItem(o) {
   metaLine.className = "wb-tags gap-meta";
   let tags;
   if (isStd) {
-    const stdMeta = makeSpan("wb-meta", `standard CCU: $${o.toStore} − $${o.fromStore} store prices`);
+    const specOnly = !!o.specOnly;
+    const stdMeta = makeSpan("wb-meta", specOnly
+      ? `standard CCU: $${o.toStore}* − $${o.fromStore}* speculative (community sheet)`
+      : `standard CCU: $${o.toStore} − $${o.fromStore} store prices`);
     // NEW in 4.7: hover to see where each store price comes from (your CSV wins: part 2f)
     // (short source names here, plus the CCU Game note once at the end when a price is from your CSV)
-    const shortSource = ship => csvPrice(ship) !== null ? csvSourceName() : storeFileName(ship);
+    const shortSource = ship => {
+      if (csvPrice(ship) !== null) return csvSourceName();
+      const e = specEntry(ship);
+      if (e && e.store === null && useSpecPrices) return "prices.js speculative (community sheet)";
+      return storeFileName(ship);
+    };
     const fromCsv = !usingExampleData && (csvPrice(o.to) !== null || csvPrice(o.from) !== null);
     stdMeta.title = `${o.to} $${o.toStore} from ${shortSource(o.to)} · ` +
                     `${o.from} $${o.fromStore} from ${shortSource(o.from)}` +
-                    (fromCsv ? ` (${CCU_GAME_SPEC_NOTE})` : "");
+                    (fromCsv ? ` (${CCU_GAME_SPEC_NOTE})` : "") +
+                    (specOnly ? " · not an official RSI price" : "");
     metaLine.appendChild(stdMeta);
-    tags = [ESTIMATED_TAG];
+    tags = specOnly ? [ESTIMATED_TAG, SPECULATIVE_TAG] : [ESTIMATED_TAG];
   } else {
     const e = o.entry;
     const meta = makeSpan("wb-meta", `last seen WB $${e.wb} · ${e.date} ${e.event}`);
