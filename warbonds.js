@@ -36,8 +36,6 @@
 // Remember the comma after every } except the last one.
 
 const WARBOND_DATA_UPDATED = "2026-11-02";
-// IAE prep 2026-11-06: Cutlass Steel citation corrected to CCU Game (was draft/unverified).
-// 1.1: Centaurus Mk V (WB $275 / std $300) is offered in suggestions like any other warbond target.
 
 const WARBONDS = [
   { ship: "C8X Pisces Expedition", wb: 40, std: 45, now: 45, date: "2022-11-30", event: "IAE 2952", seen: 2, q: "A", best: "A", basis: "explicit", url: "https://testsquadron.com/threads/iae-2952-wb-ccu-watch.20063/", examples: ["Aurora Mk I LX ($35 then) -> $5 cash, IAE 2952", "MPUV Cargo ($35 then) -> $5 cash, IAE 2952"] },
