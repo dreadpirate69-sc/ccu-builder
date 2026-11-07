@@ -39,6 +39,8 @@ Thanks to all of them. This app wouldn't exist without them.
   Loading your own CSV later replaces the example.
 - **? Help** shows the short welcome steps again at any time.
 
+[IAE prep tutorial](https://github.com/dreadpirate69-sc/ccu-builder/releases/tag/tutorial-iae-2956) (video, 4:50): how to build chains, find gaps and use the shopping list ahead of IAE 2956.
+
 ## Quick tour
 **Chains (right side).** Each row is one chain toward a goal ship, drawn on a price ruler from $0.
 - **+ Add chain** to add a goal, Edit / Delete / ↑ ↓ on each row. **Clear all chains** removes
